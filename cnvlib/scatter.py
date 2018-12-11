@@ -39,19 +39,19 @@ def do_scatter(cnarr, segments=None, variants=None,
         MB = 1
 
     if not show_gene and not show_range:
-        genome_scatter(cnarr, segments, variants, do_trend, y_min, y_max, title,
+        axgrid = genome_scatter(cnarr, segments, variants, do_trend, y_min, y_max, title,
                        segment_color)
     else:
         if by_bin:
             show_range = show_range_bins
-        chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
+        axgrid = chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
                            antitarget_marker, do_trend, by_bin, window_width,
                            y_min, y_max, title, segment_color)
 
     if by_bin:
         # Reset to avoid permanently altering the value of cnvlib.scatter.MB
         MB = orig_mb
-
+    return axis
 
 # === Genome-level scatter plots ===
 
@@ -66,24 +66,25 @@ def genome_scatter(cnarr, segments=None, variants=None, do_trend=False,
         # Place chromosome labels between the CNR and SNP plots
         axis2.tick_params(labelbottom=False)
         chrom_sizes = plots.chromosome_sizes(cnarr or segments)
-        snv_on_genome(axis2, variants, chrom_sizes, segments, do_trend,
+        axis2 = snv_on_genome(axis2, variants, chrom_sizes, segments, do_trend,
                       segment_color)
     else:
-        _fig, axis = pyplot.subplots()
+        axgrid = pyplot.GridSpec(3,1,hspace=.85)
+        axis = pyplot.subplot(axgrid[:3])
     if title is None:
         title = (cnarr or segments or variants).sample_id
     if cnarr or segments:
         axis.set_title(title)
-        cnv_on_genome(axis, cnarr, segments, do_trend, y_min, y_max,
+        axis = cnv_on_genome(axis, cnarr, segments, do_trend, y_min, y_max,
                       segment_color)
     else:
         axis.set_title("Variant allele frequencies: %s" % title)
         chrom_sizes = collections.OrderedDict(
             (chrom, subarr["end"].max())
             for chrom, subarr in variants.by_chromosome())
-        snv_on_genome(axis, variants, chrom_sizes, segments, do_trend,
+        axis = snv_on_genome(axis, variants, chrom_sizes, segments, do_trend,
                       segment_color)
-
+    return axgrid
 
 
 def cnv_on_genome(axis, probes, segments, do_trend=False, y_min=None,
@@ -145,7 +146,7 @@ def cnv_on_genome(axis, probes, segments, do_trend=False, y_min=None,
                 axis.plot((seg.start + x_offset, seg.end + x_offset),
                           (seg.log2, seg.log2),
                           color=color, linewidth=3, solid_capstyle='round')
-
+    return axis
 
 def snv_on_genome(axis, variants, chrom_sizes, segments, do_trend, segment_color):
     """Plot a scatter-plot of SNP chromosomal positions and shifts."""
@@ -189,7 +190,7 @@ def snv_on_genome(axis, variants, chrom_sizes, segments, do_trend, segment_color
                 axis.plot(posn, [v_freq, v_freq],
                           color=color, linewidth=2, zorder=-1,
                           solid_capstyle='round')
-
+    return axis
 
 # === Chromosome-level scatter plots ===
 
@@ -226,7 +227,8 @@ def chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
             snv_on_chromosome(axis2, sel_snvs, sel_segs, genes, do_trend,
                               by_bin, segment_color)
         else:
-            _fig, axis = pyplot.subplots()
+            axgrid = pyplot.GridSpec(3, 1, hspace=.5)
+            axis = pyplot.subplot(axgrid[:3])
             if by_bin:
                 axis.set_xlabel("Position (bin)")
             else:
@@ -244,7 +246,7 @@ def chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
     if title is None:
         title = "%s %s" % ((cnarr or segments or variants).sample_id, chrom)
     axis.set_title(title)
-
+    return axis
 
 def select_range_genes(cnarr, segments, variants, show_range, show_gene,
                        window_width):
@@ -421,7 +423,7 @@ def cnv_on_chromosome(axis, probes, segments, genes, antitarget_marker=None,
             axis.plot((row.start * MB, row.end * MB),
                       (row.log2, row.log2),
                       color=color, linewidth=4, solid_capstyle='round')
-
+    return axis
 
 def snv_on_chromosome(axis, variants, segments, genes, do_trend, by_bin,
                       segment_color):
@@ -458,7 +460,7 @@ def snv_on_chromosome(axis, variants, segments, genes, do_trend, by_bin,
 
     if genes:
         highlight_genes(axis, genes, .9)
-
+    return axis
 
 def set_xlim_from(axis, probes=None, segments=None, variants=None):
     """Configure axes for plotting a single chromosome's data.

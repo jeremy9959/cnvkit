@@ -39,19 +39,20 @@ def do_scatter(cnarr, segments=None, variants=None,
         MB = 1
 
     if not show_gene and not show_range:
-        axgrid = genome_scatter(cnarr, segments, variants, do_trend, y_min, y_max, title,
+        fig = genome_scatter(cnarr, segments, variants, do_trend, y_min, y_max, title,
                        segment_color)
     else:
         if by_bin:
             show_range = show_range_bins
-        axgrid = chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
+        fig = chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
                            antitarget_marker, do_trend, by_bin, window_width,
                            y_min, y_max, title, segment_color)
 
     if by_bin:
         # Reset to avoid permanently altering the value of cnvlib.scatter.MB
         MB = orig_mb
-    return axis
+    return fig
+
 
 # === Genome-level scatter plots ===
 
@@ -84,7 +85,8 @@ def genome_scatter(cnarr, segments=None, variants=None, do_trend=False,
             for chrom, subarr in variants.by_chromosome())
         axis = snv_on_genome(axis, variants, chrom_sizes, segments, do_trend,
                       segment_color)
-    return axgrid
+    return axis.get_figure()
+
 
 
 def cnv_on_genome(axis, probes, segments, do_trend=False, y_min=None,
@@ -233,20 +235,21 @@ def chromosome_scatter(cnarr, segments, variants, show_range, show_gene,
                 axis.set_xlabel("Position (bin)")
             else:
                 axis.set_xlabel("Position (Mb)")
-        cnv_on_chromosome(axis, sel_probes, sel_segs, genes,
+        axis = cnv_on_chromosome(axis, sel_probes, sel_segs, genes,
                           antitarget_marker=antitarget_marker,
                           do_trend=do_trend, x_limits=window_coords,
                           y_min=y_min, y_max=y_max, segment_color=segment_color)
     elif variants:
         # Only plot SNVs in a single-panel layout
         _fig, axis = pyplot.subplots()
-        snv_on_chromosome(axis, sel_snvs, sel_segs, genes, do_trend,
+        axis = snv_on_chromosome(axis, sel_snvs, sel_segs, genes, do_trend,
                           by_bin, segment_color)
 
     if title is None:
         title = "%s %s" % ((cnarr or segments or variants).sample_id, chrom)
     axis.set_title(title)
-    return axis
+    return axis.get_figure()
+
 
 def select_range_genes(cnarr, segments, variants, show_range, show_gene,
                        window_width):
